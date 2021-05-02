@@ -326,8 +326,8 @@ class BuyStatusView(View):
             'size'         : bid.product_size.size.name,
             'image'        : bid.product_size.product.image_set.all()[0].image_url,
             'price'        : int(bid.price),
-            "orderNumber"  : bid.order_number,
-            "purchaseDate" : bid.matched_at.strftime('%Y/%m/%d'),
+            'orderNumber'  : bid.order_number,
+            'purchaseDate' : bid.matched_at.strftime('%Y/%m/%d'),
             } for bid in pending_bids
         ]
 
@@ -366,8 +366,8 @@ class SellStatusView(View):
             'size'         : ask.product_size.size.name,
             'image'        : ask.product_size.product.image_set.first().image_url,
             'price'        : int(ask.price),
-            "orderNumber"  : ask.order_number,
-            "purchaseDate" : ask.matched_at.strftime('%Y/%m/%d'),
+            'orderNumber'  : ask.order_number,
+            'purchaseDate' : ask.matched_at.strftime('%Y/%m/%d'),
             } for ask in pending_asks
         ]
 

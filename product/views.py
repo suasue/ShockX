@@ -7,79 +7,48 @@ from django.db.models import Q, Min, Avg
 from .models          import Product, Image, Size, ProductSize 
 from order.models     import Ask, Bid, OrderStatus, ExpirationType
 
-ORDER_STATUS_CURRENT   = 'current'
-ORDER_STATUS_HISTORY   = 'history'
+ORDER_STATUS_CURRENT = 'current'
+ORDER_STATUS_HISTORY = 'history'
 
 class ProductListView(View):
     def get(self, request):
-        lowest_price  = request.GET.get('lowest')
-        highest_price = request.GET.get('highest')
+        lowest_price  = request.GET.get('lowest', None)
+        highest_price = request.GET.get('highest', None)
         limit         = int(request.GET.get('limit', 0))
         offset        = int(request.GET.get('offset', 0))
         size          = int(request.GET.get('size', 0))
-        
-        if not size:
-            products = Product.objects.all()
-            price_condition = Q()
 
-            if lowest_price and highest_price:
-                price_condition.add(Q(min_price__gte=lowest_price) & Q(min_price__lte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
-
-            if lowest_price and not highest_price:
-                price_condition.add(Q(min_price__lte=lowest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
-
-            if highest_price and not lowest_price:
-                price_condition.add(Q(min_price__gte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
-            
-            products = Product.objects.annotate(min_price=Min('productsize__ask__price')).filter(price_condition)
-
-            total_products = [
-                {'productId'   : product.id,
-                'productName'  : product.name,
-                'productImage' : product.image_set.first().image_url,
-                'price'        : min([int(ask.price) for ask in Ask.objects.filter(
-                            product_size__product_id = product.id)])} 
-                    for product in products][offset:offset+limit]
-
-            size_categories = [
-                    {
-                        'size'     : size.id,
-                        'sizeName' : size.name
-                        }
-                    for size in Size.objects.all()]
-
-            return JsonResponse({'products': total_products, 'size_categories': size_categories}, status=200)
-
+        products = Product.objects.all()
         price_condition = Q()
 
         if lowest_price and highest_price:
-            price_condition.add(Q(min_price__gte=lowest_price) & Q(min_price__lte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT) & Q(productsize__size_id=size), Q.AND)
-        
+            price_condition.add(Q(min_price__gte=lowest_price) & Q(min_price__lte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
+
         if lowest_price and not highest_price:
-            price_condition.add(Q(min_price__lte=lowest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT) & Q(productsize__size_id=size), Q.AND)
+            price_condition.add(Q(min_price__lte=lowest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
 
         if highest_price and not lowest_price:
-            price_condition.add(Q(min_price__gte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT) & Q(productsize__size_id=size), Q.AND)
-            
-        if not highest_price and not lowest_price:
+            price_condition.add(Q(min_price__gte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
+        
+        if size:
             price_condition.add(Q(productsize__size_id=size), Q.AND)
 
         products = Product.objects.annotate(min_price=Min('productsize__ask__price')).filter(price_condition)
-        
-        total_products = [
-            {'productId'   : product.id,
+
+        total_products = [{
+            'productId'    : product.id,
             'productName'  : product.name,
             'productImage' : product.image_set.first().image_url,
-            'price'        : min([int(ask.price) for ask in Ask.objects.filter(
-                        product_size__product_id = product.id)]) if Ask.objects.filter(product_size__product_id = product.id) else 0 } 
-                for product in products][offset:offset+limit]
-        
-        size_categories = [
-                {
-                    'size'     : size.id,
-                    'sizeName' : size.name
-                    }
-                for size in Size.objects.all()]
+            'price'        : min([int(ask.price) for ask in Ask.objects.filter(product_size__product_id = product.id)])\
+                             if Ask.objects.filter(product_size__product_id=product.id) else 0
+            } for product in products
+        ][offset:offset+limit]
+
+        size_categories = [{
+            'size'     : size.id,
+            'sizeName' : size.name
+            } for size in Size.objects.all()
+        ]
 
         return JsonResponse({'products': total_products, 'size_categories': size_categories}, status=200)
 
