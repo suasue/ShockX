@@ -101,7 +101,7 @@ class SellTest(TestCase):
 
         response = client.get(f'/order/sell/{self.product.id}?size={self.size.id}', **headers)
 
-        self.assertEqual(response.json()['data']['product']['id'], 2)
+        self.assertEqual(response.json()['data']['product']['id'], 3)
         self.assertEqual(response.json()['data']['product']['name'], "Jordan")
         self.assertEqual(response.json()['data']['product']['lowestAsk'], "100.00")
         self.assertEqual(response.json()['data']['product']['highestBid'], "100.00")
