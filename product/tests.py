@@ -171,7 +171,7 @@ class ProductDetailTest(TestCase):
         response = client.get('/product/999')
         self.assertEqual(response.json(),
             {
-                'message':'PAGE_NOT_FOUND'
+                'message':'PRODUCT_DOES_NOT_EXIST'
             }
         )
         self.assertEqual(response.status_code, 404)
