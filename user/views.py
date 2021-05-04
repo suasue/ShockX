@@ -68,25 +68,26 @@ class PortfolioView(View):
 class KakaoSocialLogin(View):
     def post(self, request):
         try:
-            access_token = request.headers["Authorization"]
-            headers      = ({'Authorization' : f"Bearer {access_token}"})
-            url          = "https://kapi.kakao.com/v2/user/me"
+            access_token = request.headers['Authorization']
+            headers      = ({'Authorization' : f'Bearer {access_token}'})
+            url          = 'https://kapi.kakao.com/v2/user/me'
             response     = requests.get(url, headers=headers)
             user         = response.json()
 
-            if User.objects.filter(email = user['kakao_account']['email']).exists(): 
-                user_info     = User.objects.get(email=user['kakao_account']['email'])
-                encoded_jwt   = jwt.encode({'email': user_info.email}, SECRET_KEY, algorithm=ALGORITHM)
+            if User.objects.filter(email=user['kakao_account']['email']).exists(): 
+                user_info   = User.objects.get(email=user['kakao_account']['email'])
+                encoded_jwt = jwt.encode({'email': user_info.email}, SECRET_KEY, algorithm=ALGORITHM)
 
-                return JsonResponse({'user_name': user_info.name,'access_token' : encoded_jwt}, status = 200)            
+                return JsonResponse({'user_name':user_info.name, 'access_token':encoded_jwt}, status=200)            
             
             user_info = User.objects.create(
-                    email = user['kakao_account']['email'],
-                    name  = user['kakao_account']['profile']['nickname']
+                email=user['kakao_account']['email'],
+                name  = user['kakao_account']['profile']['nickname']
             )
-            encode_jwt    = jwt.encode({'email': user_info.email}, SECRET_KEY, algorithm=ALGORITHM)
 
-            return JsonResponse({'user_name' : user_info.name,'access_token' : encode_jwt}, status = 201)            
+            encode_jwt = jwt.encode({'email':user_info.email}, SECRET_KEY, algorithm=ALGORITHM)
+
+            return JsonResponse({'user_name':user_info.name, 'access_token':encode_jwt}, status=201)            
 
         except KeyError:
-            return JsonResponse({'message': 'KEY_ERROR'}, status=400)
+            return JsonResponse({'message':'KEY_ERROR'}, status=400)
