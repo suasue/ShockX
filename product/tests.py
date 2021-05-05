@@ -157,14 +157,14 @@ class ProductDetailTest(TestCase):
         self.assertEqual(response.json()['results']['sizes'][0]['size_name'],'1')
         self.assertEqual(response.json()['results']['sizes'][0]['last_sale'],463)
         self.assertEqual(response.json()['results']['sizes'][0]['price_change'],63)
-        self.assertEqual(response.json()['results']['sizes'][0]['price_change_percentage'],63)
+        self.assertEqual(response.json()['results']['sizes'][0]['price_change_percentage'],15)
         self.assertEqual(response.json()['results']['sizes'][0]['lowest_ask'],413)
         self.assertEqual(response.json()['results']['sizes'][0]['highest_bid'],223)
         self.assertEqual(response.json()['results']['sizes'][0]['total_sales'],2)
         self.assertEqual(response.json()['results']['sizes'][0]['price_premium'],131)
         self.assertEqual(response.json()['results']['sizes'][0]['average_sale_price'],431)
-        self.assertEqual(response.json()['results']['sizes'][0]['sales_history'][0]['sale_price'],400)
-        self.assertEqual(response.json()['results']['sizes'][0]['sales_history'][0]['date_time'],'2021-07-18')
+        self.assertEqual(response.json()['results']['sizes'][0]['sales_history'][0]['sale_price'],463)
+        self.assertEqual(response.json()['results']['sizes'][0]['sales_history'][0]['date_time'],'2021-09-18')
         self.assertEqual(response.status_code, 200)
 
     def test_product_detail_not_found(self):
