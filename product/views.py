@@ -2,9 +2,9 @@ import json
 
 from django.views     import View
 from django.http      import JsonResponse
-from django.db.models import Q, Min, Avg
+from django.db.models import Q, Min, Avg, Prefetch
 
-from .models          import Product, Image, Size, ProductSize 
+from .models          import Product, Size 
 from order.models     import Ask, Bid
 
 ORDER_STATUS_CURRENT = 'current'
@@ -18,7 +18,6 @@ class ProductListView(View):
         offset        = int(request.GET.get('offset', 0))
         size          = int(request.GET.get('size', 0))
 
-        products = Product.objects.all()
         price_condition = Q()
 
         if lowest_price and highest_price:
@@ -33,14 +32,13 @@ class ProductListView(View):
         if size:
             price_condition.add(Q(productsize__size_id=size), Q.AND)
 
-        products = Product.objects.annotate(min_price=Min('productsize__ask__price')).filter(price_condition)
+        products = Product.objects.prefetch_related('image_set').annotate(min_price=Min('productsize__ask__price')).filter(price_condition)
 
         total_products = [{
             'productId'    : product.id,
             'productName'  : product.name,
-            'productImage' : product.image_set.first().image_url,
-            'price'        : min([int(ask.price) for ask in Ask.objects.filter(product_size__product_id = product.id)])\
-                             if Ask.objects.filter(product_size__product_id=product.id) else 0
+            'productImage' : product.image_set.all()[0].image_url,
+            'price'        : int(product.min_price) if product.min_price else 0
             } for product in products
         ][offset:offset+limit]
 
