@@ -6,32 +6,37 @@ from datetime         import datetime
 
 from django.http      import JsonResponse
 from django.views     import View
-from django.db.models import Avg
+from django.db.models import Avg, Case, When
 
 from product.models   import ProductSize
 from .models          import User, ShippingInformation, Portfolio
 from my_settings      import ALGORITHM, SECRET_KEY
 from utils            import login_decorator
-from decorators import query_debugger
+
 ORDER_STATUS_HISTORY = 'history'
 
 class PortfolioView(View):
     @login_decorator
-    @query_debugger
     def get(self, request):
         user = request.user
 
         portfolios = Portfolio.objects.select_related('product_size', 'product_size__product', 'product_size__size')\
-                .filter(user=user).prefetch_related('product_size__ask_set')
+            .filter(user=user)\
+            .annotate(total_avg=Avg(
+                Case(
+                    When(
+                        product_size__product__productsize__ask__order_status__name=ORDER_STATUS_HISTORY,
+                        then='product_size__product__productsize__ask__price'
+                    )
+                )
+            ))
 
         portfolio_products = [{
             'name'           : portfolio.product_size.product.name,
             'size'           : portfolio.product_size.size.name,
             'purchase_date'  : portfolio.purchase_date.strftime('%Y/%m/%d'),
             'purchase_price' : int(portfolio.purchase_price),
-            'market_value'   : int(portfolio.product_size.product.productsize_set\
-                    .filter(ask__order_status__name=ORDER_STATUS_HISTORY)\
-                    .annotate(size_avg=Avg('ask__price')).aggregate(total_avg=Avg('size_avg'))['total_avg'])
+            'market_value'   : int(portfolio.total_avg),
             } for portfolio in portfolios
         ]
 
