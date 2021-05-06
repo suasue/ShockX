@@ -1,15 +1,16 @@
 import json
 from datetime import datetime, timedelta
 
-from django.http  import JsonResponse
-from django.views import View
-from django.db    import transaction
+from django.http      import JsonResponse
+from django.views     import View
+from django.db        import transaction
+from django.db.models import Prefetch
 
 from user.models    import User, ShippingInformation
 from product.models import ProductSize, Product, Size, Image
 from order.models   import Ask, Bid, OrderStatus, Order
 from utils          import login_decorator
-
+from decorators import query_debugger
 ORDER_STATUS_CURRENT = 'current'
 ORDER_STATUS_PENDING = 'pending'
 ORDER_NUMBER_LENGTH  = 5
@@ -297,29 +298,31 @@ class SellView(View):
 
 class BuyStatusView(View):
     @login_decorator
+    @query_debugger
     def get(self, request):
         user = request.user
 
-        current_bids = Bid.objects.select_related('product_size', 'product_size__product', 'product_size__size')\
-                .filter(user=user, order_status__name=ORDER_STATUS_CURRENT)\
-                .prefetch_related('product_size__product__image_set', 'product_size__bid_set', 'product_size__ask_set')
+        current_bids = Bid.objects.select_related('product_size__product', 'product_size__size')\
+            .filter(user=user, order_status__name=ORDER_STATUS_CURRENT)\
+            .prefetch_related('product_size__product__image_set',
+                Prefetch('product_size__bid_set', queryset=Bid.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('-price'), to_attr='highest_bid'),
+                Prefetch('product_size__ask_set', queryset=Ask.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('price'), to_attr='lowest_ask')
+            )
 
         current_list = [{
             'name'       : bid.product_size.product.name,
             'size'       : bid.product_size.size.name,
-            'image'      : bid.product_size.product.image_set.first().image_url,
+            'image'      : bid.product_size.product.image_set.all()[0].image_url,
             'bidPrice'   : int(bid.price),
-            'highestBid' : int(bid.product_size.bid_set.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('-price').all()[0].price)\
-                    if bid.product_size.bid_set.filter(order_status__name=ORDER_STATUS_CURRENT) else 0,
-            'lowestAsk'  : int(bid.product_size.ask_set.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('price').all()[0].price)\
-                    if bid.product_size.ask_set.filter(order_status__name=ORDER_STATUS_CURRENT) else 0,
+            'highestBid' : int(bid.product_size.highest_bid[0].price) if bid.product_size.highest_bid else 0,
+            'lowestAsk'  : int(bid.product_size.lowest_ask[0].price) if bid.product_size.lowest_ask else 0,
             'expires'    : bid.expiration_date.strftime('%Y/%m/%d')
             } for bid in current_bids
         ]
 
-        pending_bids = Bid.objects.select_related('product_size', 'product_size__product', 'product_size__size')\
-                .filter(user=user, order_status__name=ORDER_STATUS_PENDING)\
-                .prefetch_related('product_size__product__image_set', 'product_size__bid_set', 'product_size__ask_set')
+        pending_bids = Bid.objects.select_related('product_size__product', 'product_size__size')\
+            .filter(user=user, order_status__name=ORDER_STATUS_PENDING)\
+            .prefetch_related('product_size__product__image_set')
 
         pending_list = [{
             'name'         : bid.product_size.product.name,
@@ -337,34 +340,36 @@ class BuyStatusView(View):
 
 class SellStatusView(View):
     @login_decorator
+    @query_debugger
     def get(self, request):
         user = request.user
         
         current_asks = Ask.objects.select_related('product_size', 'product_size__product', 'product_size__size')\
-                .filter(user=user, order_status__name=ORDER_STATUS_CURRENT)\
-                .prefetch_related('product_size__product__image_set', 'product_size__ask_set', 'product_size__bid_set')
+            .filter(user=user, order_status__name=ORDER_STATUS_CURRENT)\
+            .prefetch_related('product_size__product__image_set',
+                Prefetch('product_size__bid_set', queryset=Bid.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('-price'), to_attr='highest_bid'),
+                Prefetch('product_size__ask_set', queryset=Ask.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('price'), to_attr='lowest_ask')
+            )
 
         current_list = [{
             'name'       : ask.product_size.product.name,
             'size'       : ask.product_size.size.name,
-            'image'      : ask.product_size.product.image_set.first().image_url,
+            'image'      : ask.product_size.product.image_set.all()[0].image_url,
             'askPrice'   : int(ask.price),
-            'highestBid' : int(ask.product_size.bid_set.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('-price').first().price)\
-                    if ask.product_size.bid_set.filter(order_status__name=ORDER_STATUS_CURRENT) else 0,
-            'lowestAsk'  : int(ask.product_size.ask_set.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('price').first().price)\
-                    if ask.product_size.ask_set.filter(order_status__name=ORDER_STATUS_CURRENT) else 0,
+            'highestBid' : int(ask.product_size.highest_bid[0].price) if ask.product_size.highest_bid else 0,
+            'lowestAsk'  : int(ask.product_size.lowest_ask[0].price) if ask.product_size.lowest_ask else 0,
             'expires'    : ask.expiration_date.strftime('%Y/%m/%d')
             } for ask in current_asks
         ]
 
-        pending_asks = Ask.objects.select_related('product_size', 'product_size__product', 'product_size__size')\
-                .filter(user=user, order_status__name=ORDER_STATUS_PENDING)\
-                .prefetch_related('product_size__product__image_set', 'product_size__ask_set', 'product_size__bid_set')
+        pending_asks = Ask.objects.select_related('product_size__product', 'product_size__size')\
+            .filter(user=user, order_status__name=ORDER_STATUS_PENDING)\
+            .prefetch_related('product_size__product__image_set')
 
         pending_list = [{
             'name'         : ask.product_size.product.name,
             'size'         : ask.product_size.size.name,
-            'image'        : ask.product_size.product.image_set.first().image_url,
+            'image'        : ask.product_size.product.image_set.all()[0].image_url,
             'price'        : int(ask.price),
             'orderNumber'  : ask.order_number,
             'purchaseDate' : ask.matched_at.strftime('%Y/%m/%d'),
