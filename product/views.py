@@ -14,25 +14,22 @@ class ProductListView(View):
     def get(self, request):
         lowest_price  = request.GET.get('lowest', None)
         highest_price = request.GET.get('highest', None)
+        size          = int(request.GET.get('size', 0))
         limit         = int(request.GET.get('limit', 0))
         offset        = int(request.GET.get('offset', 0))
-        size          = int(request.GET.get('size', 0))
-
-        price_condition = Q()
-
-        if lowest_price and highest_price:
-            price_condition.add(Q(min_price__gte=lowest_price) & Q(min_price__lte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
-
-        if lowest_price and not highest_price:
-            price_condition.add(Q(min_price__lte=lowest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
-
-        if highest_price and not lowest_price:
-            price_condition.add(Q(min_price__gte=highest_price) & Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT), Q.AND)
         
-        if size:
-            price_condition.add(Q(productsize__size_id=size), Q.AND)
+        product_condition = Q(productsize__ask__order_status__name=ORDER_STATUS_CURRENT)
 
-        products = Product.objects.prefetch_related('image_set').annotate(min_price=Min('productsize__ask__price')).filter(price_condition)
+        if lowest_price:
+            product_condition.add(Q(min_price__gte=lowest_price), Q.AND)
+
+        if highest_price:
+            product_condition.add(Q(min_price__lte=highest_price), Q.AND)
+
+        if size:
+            product_condition.add(Q(productsize__size_id=size), Q.AND)
+
+        products = Product.objects.prefetch_related('image_set').annotate(min_price=Min('productsize__ask__price')).filter(product_condition)
 
         total_products = [{
             'productId'    : product.id,
@@ -52,18 +49,17 @@ class ProductListView(View):
 
 class ProductDetailView(View):
     def get(self, request, product_id):
-        Product.objects.prefetch_related('image_set')
-
         if not ProductSize.objects.filter(product_id=product_id).exists():
             return JsonResponse({'message':'PRODUCT_DOES_NOT_EXIST'}, status=404)
 
-        product       = Product.objects.get(id=product_id)
+        product       = Product.objects.prefetch_related('image_set').get(id=product_id)
         product_sizes = ProductSize.objects.select_related('size')\
             .filter(product_id=product_id).prefetch_related('product__image_set', 
                 Prefetch('ask_set', queryset=Ask.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('price'), to_attr='lowest_ask'),
                 Prefetch('bid_set', queryset=Bid.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('-price'), to_attr='highest_bid'),
                 Prefetch('ask_set', queryset=Ask.objects.filter(order_status__name=ORDER_STATUS_HISTORY).order_by('-matched_at'), to_attr='ask_history'),
             )
+            
         results = {
             'product_id'     : product.id,
             'product_name'   : product.name,
