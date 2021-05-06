@@ -2,7 +2,7 @@ import json
 
 from django.views     import View
 from django.http      import JsonResponse
-from django.db.models import Q, Min, Avg, Prefetch
+from django.db.models import Q, Min, Avg, Prefetch, Case, When
 
 from product.models import Product, Size, ProductSize
 from order.models   import Ask, Bid
@@ -54,12 +54,20 @@ class ProductDetailView(View):
 
         product       = Product.objects.prefetch_related('image_set').get(id=product_id)
         product_sizes = ProductSize.objects.select_related('size')\
-            .filter(product_id=product_id).prefetch_related('product__image_set', 
+            .filter(product_id=product_id)\
+            .prefetch_related('product__image_set', 
                 Prefetch('ask_set', queryset=Ask.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('price'), to_attr='lowest_ask'),
                 Prefetch('bid_set', queryset=Bid.objects.filter(order_status__name=ORDER_STATUS_CURRENT).order_by('-price'), to_attr='highest_bid'),
                 Prefetch('ask_set', queryset=Ask.objects.filter(order_status__name=ORDER_STATUS_HISTORY).order_by('-matched_at'), to_attr='ask_history'),
-            )
-            
+            ).annotate(total_avg=Avg(
+                Case(
+                    When(
+                        ask__order_status__name=ORDER_STATUS_HISTORY,
+                        then='ask__price'
+                    )
+                )
+            ))
+
         results = {
             'product_id'     : product.id,
             'product_name'   : product.name,
@@ -83,7 +91,7 @@ class ProductDetailView(View):
             'highest_bid'             : int(product_size.highest_bid[0].price) if product_size.highest_bid else 0,
             'total_sales'             : len(product_size.ask_history),
             'price_premium'           : int((product_size.ask_history[0].price - product.retail_price) / product.retail_price * 100) if product_size.ask_history else 0,
-            'average_sale_price'      : int(sum([ask.price for ask in product_size.ask_history]) / len(product_size.ask_history)) if product_size.ask_history else 0,
+            'average_sale_price'      : int(product_size.total_avg) if product_size.total_avg else 0,
             'sales_history': [{
                 'sale_price'     : int(ask.price),
                 'date_time'      : ask.matched_at.strftime('%Y-%m-%d'),
