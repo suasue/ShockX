@@ -280,7 +280,7 @@ class ProductListTest(TestCase):
 
     def test_product_list_no_size_lowest_price_get_success(self):
         client = Client()
-        response = client.get('/product', {'limit':'20', 'lowest':'300'})
+        response = client.get('/product', {'limit':'20', 'highest':'300'})
         self.assertEqual(response.json(),
                 {
                     'products' : [
@@ -334,7 +334,7 @@ class ProductListTest(TestCase):
 
     def test_product_list_size_highest_price_get_success(self):
         client = Client()
-        response = client.get('/product', {'limit':'20', 'size':'1', 'highest':'400'})
+        response = client.get('/product', {'limit':'20', 'size':'1', 'lowest':'400'})
         self.assertEqual(response.json(),
                 {
                     'products' : [

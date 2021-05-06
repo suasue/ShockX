@@ -2,10 +2,10 @@ import json
 
 from django.views     import View
 from django.http      import JsonResponse
-from django.db.models import Q, Min, Avg, Prefetch, F
+from django.db.models import Q, Min, Avg, Prefetch
 
-from .models          import Product, Size, ProductSize
-from order.models     import Ask, Bid
+from product.models import Product, Size, ProductSize
+from order.models   import Ask, Bid
 
 ORDER_STATUS_CURRENT = 'current'
 ORDER_STATUS_HISTORY = 'history'
@@ -45,7 +45,7 @@ class ProductListView(View):
             } for size in Size.objects.all()
         ]
 
-        return JsonResponse({'products': total_products, 'size_categories': size_categories}, status=200)
+        return JsonResponse({'products':total_products, 'size_categories':size_categories}, status=200)
 
 class ProductDetailView(View):
     def get(self, request, product_id):
@@ -93,4 +93,4 @@ class ProductDetailView(View):
             } for product_size in product_sizes
         ]
 
-        return JsonResponse({'results': results}, status=200)
+        return JsonResponse({'results':results}, status=200)

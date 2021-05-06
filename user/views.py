@@ -12,11 +12,12 @@ from product.models   import ProductSize
 from .models          import User, ShippingInformation, Portfolio
 from my_settings      import ALGORITHM, SECRET_KEY
 from utils            import login_decorator
-
+from decorators import query_debugger
 ORDER_STATUS_HISTORY = 'history'
 
 class PortfolioView(View):
     @login_decorator
+    @query_debugger
     def get(self, request):
         user = request.user
 
@@ -76,7 +77,7 @@ class KakaoSocialLogin(View):
 
             if User.objects.filter(email=user['kakao_account']['email']).exists(): 
                 user_info   = User.objects.get(email=user['kakao_account']['email'])
-                encoded_jwt = jwt.encode({'email': user_info.email}, SECRET_KEY, algorithm=ALGORITHM)
+                encoded_jwt = jwt.encode({'email':user_info.email}, SECRET_KEY, algorithm=ALGORITHM)
 
                 return JsonResponse({'user_name':user_info.name, 'access_token':encoded_jwt}, status=200)            
             
