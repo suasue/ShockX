@@ -10,13 +10,12 @@ from user.models    import User, ShippingInformation
 from product.models import ProductSize, Product, Size, Image
 from order.models   import Ask, Bid, OrderStatus, Order
 from utils          import login_decorator
-from decorators import query_debugger
+
 ORDER_STATUS_CURRENT = 'current'
 ORDER_STATUS_PENDING = 'pending'
 ORDER_NUMBER_LENGTH  = 5
 
 class BuyView(View):
-    @login_decorator
     def get(self, request, product_id):
         size_id = request.GET.get('size', None)
         user    = request.user
@@ -53,7 +52,6 @@ class BuyView(View):
        
         return JsonResponse({'data':{'product':product_detail, 'shippingInfo':shipping_information_detail}}, status=200)
     
-    @login_decorator
     def post(self, request, product_id):
         try:
             data    = json.loads(request.body)
@@ -156,7 +154,6 @@ class BuyView(View):
             return JsonResponse({'message':'ASK_DOES_NOT_EXIST'}, status=404)
 
 class SellView(View):
-    @login_decorator
     def get(self, request, product_id):
         size_id = request.GET.get('size', None)
         user    = request.user
@@ -193,7 +190,6 @@ class SellView(View):
        
         return JsonResponse({'data':{'product':product_detail, 'shippingInfo':shipping_information_detail}}, status=200)
 
-    @login_decorator
     def post(self, request, product_id):
         try: 
             data        = json.loads(request.body)
@@ -298,7 +294,6 @@ class SellView(View):
 
 class BuyStatusView(View):
     @login_decorator
-    @query_debugger
     def get(self, request):
         user = request.user
 
@@ -340,7 +335,6 @@ class BuyStatusView(View):
 
 class SellStatusView(View):
     @login_decorator
-    @query_debugger
     def get(self, request):
         user = request.user
         
