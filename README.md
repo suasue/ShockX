@@ -1,24 +1,20 @@
-# Team shockX
+# 신발 리셀 중개사이트 shockX
 
-> 🙅 안녕하세요 저희는 미국 패션아이템 리셀 중개사이트인 'stockX' 사이트 클론 코딩을 진행한 TEAM shockX입니다.
+> ### 패션아이템 리셀 중개 사이트 <a href="https://stockx.com/">stockX</a>를 모티브로 한 프로젝트입니다.
 
 👇 아래 이미지를 클릭하시면 시연 영상이 재생됩니다.
-[![shockX](https://user-images.githubusercontent.com/67499510/114260397-86b30c00-9a0f-11eb-9665-7e66bb7ef5d2.png)](https://youtu.be/4yEd7uMqjMc)
+[![shockX](https://user-images.githubusercontent.com/67499510/117602700-4a003f00-b18c-11eb-8982-853a828f6672.png)](https://youtu.be/4yEd7uMqjMc)
 
-### 개발기간
-- 2021.03.02 - 2021.03.12 (11일)
+### 개발일정
+- 기간 : 2021.03.02 - 2021.03.12 (11일)
+- 구성원 : 프론트 3명, 백엔드 4명
 
-### 개발인원 
-- 프론트엔드 : 김민주, 서유진, 유승현
-- 백엔드 : 김하성(PM), 송빈호, 조수아, 조혜윤
-
-### 백엔드 기술스택
-- Django
-- Python
-- MySQL
-- Bcrypt, JWT
-- 카카오 소셜 로그인 API
-- AWS EC2, RDS
+### 기술 스택
+- Language: Python
+- Framework: Django
+- Database: MySQL
+- AWS(EC2, RDS)
+- Bcrypt, JWT, 카카오 소셜 로그인 API
 
 ### 협업 도구
 - Git, Github
@@ -26,7 +22,16 @@
 - Notion : API 문서 작성
 - Slack : 비대면 소통
 
-### 백엔드 주요 구현 사항
+### 담당 구현 기능
+- 관계형 데이터베이스 모델링, **AWS RDS** 연동
+- 경매 방식의 거래 API 구현
+- 원자성 확보를 위해 **트랜잭션** 단위로 DB 업데이트
+- Prefetch 객체, annotate 메소드를 적용한 **쿼리 최적화**
+- 파이썬 unittest 모듈을 활용한 **유닛테스트**
+- **Docker**를 통한 AWS EC2 배포
+- **git rebase**를 활용한 commit log 관리
+
+### 백엔드 구현 기능
 모델링
 - 관계형 데이터베이스 모델링
 - 데이터 csv 파일 작성, 데이터 업로더 작성
